@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+# Write one issue's full text to a git-internal brief file so subagents can
+# read requirements from disk instead of receiving large pasted prompts.
+#
+# Usage: issue-brief --tracker github|gitlab|local ISSUE_REF [OUTFILE]
+# Supported ISSUE_REF forms:
+#   github mode:
+#   #123
+#   123
+#   owner/repo#123
+#   https://github.com/owner/repo/issues/123
+#   gitlab mode:
+#   #123
+#   123
+#   https://gitlab.com/group/project/-/issues/123
+#   local mode:
+#   path/to/local-issue.md
+set -euo pipefail
+
+if [ "$#" -lt 3 ] || [ "$#" -gt 4 ] || [ "$1" != "--tracker" ]; then
+  echo "usage: issue-brief --tracker github|gitlab|local ISSUE_REF [OUTFILE]" >&2
+  exit 2
+fi
+
+tracker=$2
+ref=$3
+
+case "$tracker" in
+  github|gitlab|local) ;;
+  *)
+    echo "unsupported tracker: $tracker (expected github, gitlab, or local)" >&2
+    exit 2
+    ;;
+esac
+
+sanitize_ref() {
+  printf '%s' "$1" | tr -cs 'A-Za-z0-9._-' '-'
+}
+
+if [ "$#" -eq 4 ]; then
+  out=$4
+else
+  dir=$(git rev-parse --git-path implement-prd-issues)
+  mkdir -p "$dir"
+  dir=$(cd "$dir" && pwd)
+  id=$(sanitize_ref "$ref")
+  out="$dir/issue-${id}-brief.md"
+fi
+
+write_header() {
+  echo "# Issue Brief"
+  echo
+  echo "Source: $ref"
+  echo "Fetched at: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  echo
+}
+
+if [ "$tracker" = "local" ]; then
+  [ -f "$ref" ] || {
+    echo "local issue file not found: $ref" >&2
+    exit 3
+  }
+
+  abs=$(cd "$(dirname "$ref")" && pwd)/$(basename "$ref")
+  {
+    write_header
+    echo "Local path: $abs"
+    echo
+    echo "## Issue"
+    echo
+    cat "$ref"
+  } > "$out"
+  echo "wrote $out"
+  exit 0
+fi
+
+if [ "$tracker" = "github" ]; then
+  command -v gh >/dev/null 2>&1 || {
+    echo "gh is required for GitHub issue refs: $ref" >&2
+    exit 4
+  }
+
+  repo_args=()
+  target=""
+
+  if [[ "$ref" =~ ^https://github\.com/([^/]+/[^/]+)/issues/([0-9]+) ]]; then
+    repo_args=(--repo "${BASH_REMATCH[1]}")
+    target="${BASH_REMATCH[2]}"
+  elif [[ "$ref" =~ ^([^/#[:space:]]+/[^/#[:space:]]+)#([0-9]+)$ ]]; then
+    repo_args=(--repo "${BASH_REMATCH[1]}")
+    target="${BASH_REMATCH[2]}"
+  elif [[ "$ref" =~ ^#([0-9]+)$ ]]; then
+    target="${BASH_REMATCH[1]}"
+  elif [[ "$ref" =~ ^([0-9]+)$ ]]; then
+    target="${BASH_REMATCH[1]}"
+  else
+    echo "unsupported GitHub issue ref: $ref" >&2
+    exit 3
+  fi
+
+  {
+    write_header
+    echo "## Issue"
+    echo
+    gh issue view "$target" "${repo_args[@]}" --comments
+  } > "$out"
+
+  echo "wrote $out"
+  exit 0
+fi
+
+if [ "$tracker" = "gitlab" ]; then
+  command -v glab >/dev/null 2>&1 || {
+    echo "glab is required for GitLab issue refs: $ref" >&2
+    exit 4
+  }
+
+  target=""
+
+  if [[ "$ref" =~ ^https?://.+/-/issues/([0-9]+) ]]; then
+    target="${BASH_REMATCH[1]}"
+  elif [[ "$ref" =~ ^https?://.+/issues/([0-9]+) ]]; then
+    target="${BASH_REMATCH[1]}"
+  elif [[ "$ref" =~ ^#([0-9]+)$ ]]; then
+    target="${BASH_REMATCH[1]}"
+  elif [[ "$ref" =~ ^([0-9]+)$ ]]; then
+    target="${BASH_REMATCH[1]}"
+  else
+    echo "unsupported GitLab issue ref: $ref" >&2
+    exit 3
+  fi
+
+  {
+    write_header
+    echo "## Issue"
+    echo
+    glab issue view "$target" --comments
+  } > "$out"
+
+  echo "wrote $out"
+  exit 0
+fi
+
+echo "unsupported tracker: $tracker" >&2
+exit 2
