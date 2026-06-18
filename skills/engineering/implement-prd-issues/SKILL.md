@@ -12,16 +12,16 @@ Implement a PRD file or an explicit issue list by acting as a controller. Do not
 
 Two input modes exist:
 
-1. **PRD mode**: the argument is a PRD markdown file path. Parse only explicit child issue references inside that file. Run a final PRD review after all issues merge.
+1. **PRD mode**: the argument is a PRD markdown file path. Resolve child issues from that PRD according to the configured tracker. Run a final PRD review after all issues merge.
 2. **Issue-list mode**: the arguments are issue references. Treat one issue as a one-item list. Do not parse child issues from issue bodies. Run a final batch review only when there is more than one issue.
 
-PRD mode supports explicit child issue references only:
+PRD mode resolves child issues as follows:
 
-- GitHub refs: `#123`, `owner/repo#123`, `https://github.com/owner/repo/issues/123`
-- GitLab refs: `#123`, `123`, `https://gitlab.com/group/project/-/issues/123`, or self-hosted GitLab issue URLs
-- Local markdown issue paths when clearly issue-like: paths under `.scratch/`, paths under an `issue`/`issues` directory, or markdown links whose link text says `issue`
+- GitHub tracker: explicit refs inside the PRD: `#123`, `owner/repo#123`, `https://github.com/owner/repo/issues/123`
+- GitLab tracker: explicit refs inside the PRD: `#123`, `123`, `https://gitlab.com/group/project/-/issues/123`, or self-hosted GitLab issue URLs
+- Local markdown tracker: when the PRD is `.scratch/<feature-slug>/PRD.md`, use readable markdown files matching `.scratch/<feature-slug>/issues/*.md`, sorted by filename.
 
-Do not fuzzy-search, auto-scan directories, or infer children from comments.
+Do not fuzzy-search, auto-scan other directories, or infer children from comments.
 
 ## Subagent Requirement
 
@@ -66,11 +66,11 @@ Handoff files are optional. Create one only for `BLOCKED`, unresolved `NEEDS_CON
 1. Resolve the issue tracker from `docs/agents/issue-tracker.md`. Treat this file as the source of truth, like the `to-issues` skill does. If it is missing, stop before changing files and ask the user to run `/setup-matt-pocock-skills` or provide the tracker for this run. You may inspect `git remote -v` and `.scratch/` only to recommend GitHub, GitLab, or local markdown, but do not proceed until the user confirms.
 2. Require a git repository and a clean working tree. If dirty, stop and ask the user to commit, stash, or clean manually. Do not stash automatically.
 3. Read `$(git rev-parse --git-path implement-prd-issues)/progress.md` if it exists. If it matches this input, resume from the first incomplete issue. If it does not match, stop and ask whether to start fresh or resume the recorded batch. If it matches but the current branch is neither the recorded PRD/batch branch nor the recorded in-progress issue branch, stop and ask the user to check out the correct branch.
-4. Resolve input mode and issue list. PRD mode must produce at least one explicit child issue. Issue-list mode uses exactly the provided issue refs.
+4. Resolve input mode and issue list. In PRD mode with local markdown, derive the issue list from `.scratch/<feature-slug>/issues/*.md` based on the PRD path and require at least one readable markdown file. In PRD mode with other trackers, require at least one explicit child issue reference. Issue-list mode uses exactly the provided issue refs.
 5. Infer branch type: `feat`, `fix`, `refactor`, `chore`, or `docs`. Use labels and titles when available. If still unclear, ask once; final fallback is `feat`.
 6. Derive a slug from the PRD title, an explicit user phrase, the single issue title, or `batch-YYYY-MM-DD`. Slug must be lowercase, hyphen-separated, and short.
 7. Create or resume the PRD/batch branch from the current clean branch. If current branch is not a normal base branch such as `main`, `master`, `dev`, or `develop`, ask for confirmation before branching.
-8. Start the ledger with input identity, issue list, base branch, base SHA, PRD/batch branch, branch type, slug, models if specified, and timestamp.
+8. Start the ledger with input identity, issue list, base branch, base SHA, PRD/batch branch, branch type, slug, models if specified, and timestamp. For local markdown PRD mode, record the `.scratch/<feature-slug>/issues/*.md` glob result as the issue list.
 
 Branch type inference:
 
@@ -104,7 +104,7 @@ Before implementation, determine dependency order:
 
 - Use explicit `Blocked by` sections or dependency references in issue bodies when present.
 - If a referenced blocker is outside this batch, stop and ask whether to add it, remove the dependency, or postpone this batch.
-- If no dependencies are stated, preserve the PRD order or the user-provided issue-list order.
+- If no dependencies are stated, preserve the PRD order, the local markdown filename order, or the user-provided issue-list order.
 - If dependencies cycle or conflict with the given order, stop and ask.
 
 For each issue in dependency order:
