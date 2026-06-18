@@ -1,0 +1,4 @@
+anthropic
+openai
+mcp
+pdfplumber
