@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Write one issue's full text to a git-internal brief file so subagents can
-# read requirements from disk instead of receiving large pasted prompts.
+# Write one issue's full text to a git-internal brief file so subagents can read
+# requirements from disk instead of receiving large pasted prompts.
 #
 # Usage: issue-brief --tracker github|gitlab|local ISSUE_REF [OUTFILE]
 # Supported ISSUE_REF forms:
@@ -40,7 +40,7 @@ sanitize_ref() {
 if [ "$#" -eq 4 ]; then
   out=$4
 else
-  dir=$(git rev-parse --git-path implement-prd-issues)
+  dir=$(git rev-parse --git-path ipi)
   mkdir -p "$dir"
   dir=$(cd "$dir" && pwd)
   id=$(sanitize_ref "$ref")

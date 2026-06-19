@@ -1,199 +1,260 @@
 ---
 name: implement-prd-issues
-description: Implement a PRD file or explicit issue list by coordinating isolated subagents through issue branches, review gates, and squash merges.
+description: Implement a PRD parent issue or explicit issue list by coordinating fresh subagents through issue branches, review gates, final integrated review when needed, and local squash merges.
 disable-model-invocation: true
 ---
 
 # Implement PRD Issues
 
-Implement a PRD file or an explicit issue list by acting as a controller. Do not implement code directly. Coordinate fresh subagents, keep every issue isolated on its own branch, and merge only reviewed work into the PRD/batch branch.
+Execute a PRD or issue list by dispatching a fresh implementer subagent per
+issue, an issue review after each, and a broad integrated review when required.
+
+**Core principle:** Fresh subagent per issue + issue review (spec + quality) +
+local squash merge + integrated review when needed.
+
+**Narration:** between tool calls, narrate at most one short line — the ledger
+and the tool results carry the record.
+
+**Continuous execution:** Do not pause to check in with your human partner
+between issues. Execute all issues without stopping. The only reasons to stop
+are: BLOCKED status you cannot resolve, ambiguity that genuinely prevents
+progress, branch or tracker safety conflicts, or all work complete.
 
 ## Inputs
 
 Two input modes exist:
 
-1. **PRD mode**: the argument is a PRD markdown file path. Resolve child issues from that PRD according to the configured tracker. Run a final PRD review after all issues merge.
-2. **Issue-list mode**: the arguments are issue references. Treat one issue as a one-item list. Do not parse child issues from issue bodies. Run a final batch review only when there is more than one issue.
+1. **PRD mode:** the argument is a PRD file or parent issue. Resolve child
+   issues from that PRD, then run integrated review after all child issues merge.
+2. **Issue-list mode:** the arguments are issue references. Treat one issue as a
+   one-item list. Do not parse child issues from issue bodies. Run integrated
+   review only when there is more than one issue unless the user explicitly asks.
 
-PRD mode resolves child issues as follows:
+If the user provides both a PRD and issue refs, ask whether to restrict execution
+to the explicit issue list or run the full PRD child discovery.
 
-- GitHub tracker: explicit refs inside the PRD: `#123`, `owner/repo#123`, `https://github.com/owner/repo/issues/123`
-- GitLab tracker: explicit refs inside the PRD: `#123`, `123`, `https://gitlab.com/group/project/-/issues/123`, or self-hosted GitLab issue URLs
-- Local markdown tracker: when the PRD is `.scratch/<feature-slug>/PRD.md`, use readable markdown files matching `.scratch/<feature-slug>/issues/*.md`, sorted by filename.
+## Tracker Resolution
 
-Do not fuzzy-search, auto-scan other directories, or infer children from comments.
+Use `docs/agents/issue-tracker.md` as the tracker source of truth when it
+exists. If it is missing:
 
-## Subagent Requirement
+- local markdown is allowed when the input is clearly a local PRD or issue path
+- GitHub, GitLab, and custom trackers require user confirmation or configuration
+- `git remote -v` may inform a recommendation, but do not execute from inference
 
-This skill requires subagent dispatch. If the current agent runner cannot dispatch subagents, stop before changing files. Do not downgrade to single-agent implementation.
+Supported built-in trackers:
 
-## Model Selection
+- **GitHub:** use `gh` according to `docs/agents/issue-tracker.md`
+- **GitLab:** use `glab` according to `docs/agents/issue-tracker.md`
+- **Local markdown:** use files under `.scratch/`
 
-The user may specify separate models for implementation and review in natural language. If unspecified, omit model selection and let the runner use its default.
+For custom trackers, continue only when `docs/agents/issue-tracker.md` gives
+explicit commands for reading and listing issues. Otherwise stop and ask.
 
-- Implementer subagents use the implementer model.
-- Issue fixer subagents use the implementer model.
-- Issue reviewer subagents use the reviewer model.
-- Final reviewer subagents use the reviewer model.
-- Final fixer subagents use the implementer model by default. If the fix requires architecture-level judgment, use the reviewer model or a stronger model and record why in the ledger.
+Default side effects are local only. Do not push, open PRs, comment on, close,
+label, or otherwise modify tracker issues unless explicitly requested.
 
-## Files
+## PRD Child Discovery
 
-Use git-internal storage so the workflow survives compaction without polluting the working tree:
+In PRD mode, resolve child issues as follows:
 
-```bash
-$(git rev-parse --git-path implement-prd-issues)/progress.md
-$(git rev-parse --git-path implement-prd-issues)/issue-<id>-brief.md
-$(git rev-parse --git-path implement-prd-issues)/issue-<id>-report.md
-$(git rev-parse --git-path implement-prd-issues)/review-<base7>..<head7>.diff
-$(git rev-parse --git-path implement-prd-issues)/final-requirements.md
-$(git rev-parse --git-path implement-prd-issues)/final-review-report.md
-$(git rev-parse --git-path implement-prd-issues)/final-fix-report.md
-$(git rev-parse --git-path implement-prd-issues)/handoff-issue-<id>.md
-```
+- **Local markdown:** when the PRD is `.scratch/<feature-slug>/PRD.md`, use
+  readable markdown files matching `.scratch/<feature-slug>/issues/*.md`, sorted
+  by filename.
+- **GitHub/GitLab:** treat the PRD issue as the parent. Use the tracker command
+  line to list/search issues whose body has a `## Parent` reference to the PRD.
+  Comments are not part of default discovery.
+- **Fallback:** explicit child refs in the PRD body may be used if parent lookup
+  is unavailable or empty. Do not treat ordinary numbers as issue refs.
 
-Use the scripts in `scripts/`:
-
-- `scripts/issue-brief --tracker github|gitlab|local ISSUE_REF [OUTFILE]` writes a single issue brief file.
-- `scripts/review-package BASE HEAD [OUTFILE]` writes a commit list, stat, and diff package for review.
-
-Run these scripts from inside the target git repository. They use `git rev-parse --git-path implement-prd-issues` to write repo-local state.
-
-Handoff files are optional. Create one only for `BLOCKED`, unresolved `NEEDS_CONTEXT`, manual takeover, pause, or session transfer.
+Do not fuzzy-search, auto-scan unrelated directories, or infer children from
+comments. If discovery is empty or ambiguous, ask for an explicit issue list.
 
 ## Startup
 
-1. Resolve the issue tracker from `docs/agents/issue-tracker.md`. Treat this file as the source of truth, like the `to-issues` skill does. If it is missing, stop before changing files and ask the user to run `/setup-matt-pocock-skills` or provide the tracker for this run. You may inspect `git remote -v` and `.scratch/` only to recommend GitHub, GitLab, or local markdown, but do not proceed until the user confirms.
-2. Require a git repository and a clean working tree. If dirty, stop and ask the user to commit, stash, or clean manually. Do not stash automatically.
-3. Read `$(git rev-parse --git-path implement-prd-issues)/progress.md` if it exists. If it matches this input, resume from the first incomplete issue. If it does not match, stop and ask whether to start fresh or resume the recorded batch. If it matches but the current branch is neither the recorded PRD/batch branch nor the recorded in-progress issue branch, stop and ask the user to check out the correct branch.
-4. Resolve input mode and issue list. In PRD mode with local markdown, derive the issue list from `.scratch/<feature-slug>/issues/*.md` based on the PRD path and require at least one readable markdown file. In PRD mode with other trackers, require at least one explicit child issue reference. Issue-list mode uses exactly the provided issue refs.
-5. Infer branch type: `feat`, `fix`, `refactor`, `chore`, or `docs`. Use labels and titles when available. If still unclear, ask once; final fallback is `feat`.
-6. Derive a slug from the PRD title, an explicit user phrase, the single issue title, or `batch-YYYY-MM-DD`. Slug must be lowercase, hyphen-separated, and short.
-7. Create or resume the PRD/batch branch from the current clean branch. If current branch is not a normal base branch such as `main`, `master`, `dev`, or `develop`, ask for confirmation before branching.
-8. Start the ledger with input identity, issue list, base branch, base SHA, PRD/batch branch, branch type, slug, models if specified, and timestamp. For local markdown PRD mode, record the `.scratch/<feature-slug>/issues/*.md` glob result as the issue list.
-
-Branch type inference:
-
-- `fix`: bug labels or titles containing fix, bug, broken, failing, regression
-- `refactor`: titles containing refactor, restructure, cleanup, architecture, with no user-visible behavior change
-- `docs`: docs-only work, documentation, README, guides
-- `chore`: dependency, config, tooling, maintenance, build housekeeping
-- `feat`: enhancement labels, add, create, support, enable, feature, or fallback
-
-Issue tracker resolution:
-
-- If `docs/agents/issue-tracker.md` says GitHub, use `github` mode. Fetch issue briefs with `scripts/issue-brief --tracker github ...`. Issue refs must be GitHub refs such as `#123`, `owner/repo#123`, bare issue numbers, or GitHub issue URLs.
-- If it says GitLab, use `gitlab` mode. Fetch issue briefs with `scripts/issue-brief --tracker gitlab ...`. Issue refs must be GitLab issue numbers, `#123`, or GitLab issue URLs. The repo is inferred from the current clone, following the GitLab setup convention.
-- If it says local markdown, use `local` mode. Fetch issue briefs with `scripts/issue-brief --tracker local ...`. Issue refs must be readable markdown paths.
-- If it says Other, Linear, Jira, or another custom tracker, follow the freeform workflow in `docs/agents/issue-tracker.md`. Write the fetched issue body and comments into the same git-internal brief format manually. If the document does not say how to fetch an issue and comments, stop and ask for exact commands before proceeding. Do not guess.
-- If the configured tracker and the provided refs conflict, stop and ask. Do not infer tracker from the ref shape.
-- Do not close issues, update labels, or comment during normal completion even if the tracker supports it.
+1. Require a git repository and a clean working tree/index before branch
+   operations. Do not stash or discard changes automatically.
+2. Read `$(git rev-parse --git-path ipi)/progress.md` if it exists. It is the
+   active recovery ledger. Resume matching in-progress or blocked runs; do not
+   re-dispatch issues already marked complete. If it describes different input,
+   ask whether to resume the old run, archive it and start new, or stop.
+3. Resolve input mode, tracker, PRD requirements source, issue list, and issue
+   dependency order.
+4. Scan once for conflicts: PRD constraints vs issue acceptance criteria, issue
+   contradictions, dependency cycles, tracker/ref mismatches, and label risks
+   such as blocked/waiting issues. Ask one batched question if conflicts exist.
+   If the scan is clean, proceed without comment.
+5. Infer branch type (`feat`, `fix`, `refactor`, `chore`, `docs`) from user
+   input, PRD/issue title, and labels. Ask once if unclear; final fallback is
+   `feat`.
+6. Derive a short lowercase slug from user input, PRD title, single issue title,
+   or `batch-YYYY-MM-DD`.
+7. Create or resume the PRD/batch branch. If no matching ledger exists and the
+   current branch is not an obvious base branch, ask whether it is the PRD/batch
+   branch or the base for a new PRD/batch branch.
+8. Start the ledger with status, input identity, tracker, issue list, dependency
+   order, base branch/SHA, PRD/batch branch, branch type, slug, created
+   transient files, and timestamp.
 
 Branch names:
 
 ```text
-PRD/batch branch: <type>/<slug>
-Issue branch:     <type>/<slug>-issue-<issue-id>
+PRD/batch branch:  <type>/<slug>
+Issue branch:      <type>/<slug>-issue-<issue-id>
+Final check branch:<type>/<slug>-final-check
 ```
 
-If a target branch already exists and is not recorded in the matching ledger, stop and ask before reusing it.
+If a target branch already exists and is not recorded in the matching ledger,
+stop and ask before reusing it.
+
+## Model and Effort
+
+Use the current model and effort for implementers, issue fixers, issue reviewers,
+and final fixers unless the user specifies role-specific overrides. The final
+integrated reviewer uses the strongest available model/effort unless the user
+specifies otherwise. If a subagent is blocked by reasoning limits, retry with a
+stronger available model/effort and record why.
 
 ## Per-Issue Loop
-
-Before implementation, determine dependency order:
-
-- Use explicit `Blocked by` sections or dependency references in issue bodies when present.
-- If a referenced blocker is outside this batch, stop and ask whether to add it, remove the dependency, or postpone this batch.
-- If no dependencies are stated, preserve the PRD order, the local markdown filename order, or the user-provided issue-list order.
-- If dependencies cycle or conflict with the given order, stop and ask.
 
 For each issue in dependency order:
 
 1. Start from the clean PRD/batch branch. Create or resume the issue branch.
-2. Generate an issue brief with `scripts/issue-brief --tracker <configured-tracker>` or the custom tracker workflow. In PRD mode, append only PRD global constraints and background that bind this issue. Do not paste the entire PRD into the issue brief.
+2. Generate an issue brief with `scripts/issue-brief --tracker <tracker>
+   ISSUE_REF`. In PRD mode, append only PRD constraints and background that bind
+   this issue. Do not hand the full PRD to every issue subagent.
 3. Record the issue branch base SHA before dispatching implementation.
-4. Dispatch an implementer subagent using `implementer-prompt.md`. The implementer must write the detailed report file and commit all changes. Uncommitted work cannot enter review.
+4. Dispatch a fresh implementer subagent using `implementer-prompt.md`. The
+   implementer must use the test-driven-development skill when available, write
+   the detailed report file, commit all changes, and return a short status.
 5. Handle implementer status:
-   - `DONE`: verify the worktree is clean and commits exist, then review.
-   - `DONE_WITH_CONCERNS`: read concerns. Resolve correctness or scope concerns before review; record observations in the ledger.
-   - `NEEDS_CONTEXT`: provide missing context and re-dispatch when possible. If you cannot, stop and write a handoff.
-   - `BLOCKED`: assess whether more context, a stronger model, or a smaller task can resolve it. If not, stop the whole batch and write a handoff. Do not skip to the next issue.
-6. Create a review package from the recorded base SHA to `HEAD`.
-7. Dispatch an issue reviewer subagent using `issue-reviewer-prompt.md`. The reviewer checks issue scope, not whole-PRD completion.
-8. If review finds Critical or Important issues, dispatch a fixer subagent on the same issue branch. The fixer commits, appends test results to the report, and you re-run review. Repeat until Critical and Important are clear.
-9. Record Minor findings in the ledger. They do not block the issue merge unless they indicate hidden Critical or Important risk.
-10. Squash merge the reviewed issue branch into the PRD/batch branch. Keep the local issue branch. Do not push.
-11. Append completion to the ledger, including issue ref, issue branch, issue branch base/head, squash commit, tests, and review verdict.
+   - **DONE:** verify clean working tree/index and at least one commit, then
+     review.
+   - **DONE_WITH_CONCERNS:** read concerns. Resolve correctness or scope concerns
+     before review; record observations in the ledger.
+   - **NEEDS_CONTEXT:** provide missing context and re-dispatch when possible.
+   - **BLOCKED:** provide more context, split the issue, or retry with stronger
+     model/effort. If unresolved, stop the batch and keep the ledger.
+6. Generate a review package with `scripts/review-package BASE HEAD`; use the
+   recorded base SHA, never `HEAD~1`.
+7. Dispatch an issue reviewer subagent using `issue-reviewer-prompt.md`.
+8. Resolve reviewer `Cannot verify from diff` items yourself before marking the
+   issue complete. If the item is a real gap, dispatch a fixer and re-review. If
+   it is cross-issue risk, record it for integrated review.
+9. If review finds Critical or Important issues, dispatch a fresh implementer-
+   style fixer subagent on the same issue branch with all blocking findings.
+   Re-run review after fixes. Repeat until Critical and Important are clear.
+10. Record Minor findings in the ledger.
+11. Checkout the PRD/batch branch, squash merge the reviewed issue branch, verify
+    clean state, delete the local issue branch, and record the squash commit and
+    deleted branch in the ledger. Do not delete remote branches.
 
-Squash commit message:
+Squash commit subject:
 
-```text
-GitHub/GitLab: <type>: <issue title> (#<issue-id>)
-Local markdown:<type>: <issue title>
-Other tracker: <type>: <issue title>
-```
+- remote trackers: `<type>: <issue title> (<issue-ref>)`
+- local markdown: `<type>: <issue title>`
 
-Commit body:
+Commit body includes the source issue/path, reviewed issue branch, and test
+summary.
 
-```text
-Implements #<issue-id>
-Reviewed in issue branch: <issue-branch>
+## Integrated Review
 
-Tests:
-- <command>
-```
-
-For local markdown or custom trackers, replace `#<issue-id>` with the issue path or configured tracker reference.
-
-## Final Review
-
-Run final review when input mode is PRD mode or issue-list mode has more than one issue. Do not run final review for a single issue unless the user explicitly asks.
+Run integrated review in PRD mode and in issue-list mode with more than one
+issue. Skip it for a single issue unless the user explicitly asks or the issue
+created broad integration risk.
 
 1. Stay on the clean PRD/batch branch.
-2. Write `final-requirements.md` in the git-internal directory. For PRD mode, include the PRD path and the explicit issue list. For multi-issue mode, include the issue list. Include the ledger path, branch names, and known global constraints.
-3. Generate a review package from the batch base SHA to `HEAD`.
-4. Dispatch a final reviewer subagent using `final-reviewer-prompt.md`, giving it `final-requirements.md`, `progress.md`, the review package, and `final-review-report.md` as its report path.
-5. If Critical or Important findings exist, dispatch one final fixer subagent using `final-fixer-prompt.md` to fix all of them on the PRD/batch branch. The fixer commits and reports tests.
-6. Re-run final review. Repeat until Critical and Important findings are clear.
-7. Record Minor findings in the ledger and final response.
+2. Generate a review package from the batch base SHA to `HEAD`.
+3. Dispatch a final integrated reviewer with the PRD or issue-list requirements
+   source, ledger path, issue brief paths, review package, and known Minor
+   findings. The review is read-only and checks coverage, integration, regressions,
+   PRD/global constraints, and verification evidence.
+4. If there are no Critical or Important findings, complete without creating a
+   final check branch.
+5. If Critical or Important findings exist, create the final check branch from
+   the PRD/batch branch. Dispatch one fresh implementer-style final fixer with
+   the complete blocking findings list. The fixer must use test-driven
+   development, commit all changes, and report tests.
+6. Re-run integrated review on the final check branch. Repeat until Critical and
+   Important are clear.
+7. Checkout the PRD/batch branch, squash merge the final check branch, verify
+   clean state, delete the local final check branch, and record the squash commit
+   and deleted branch in the ledger. Do not delete remote branches.
 
-## Issue Tracker Side Effects
+## File Handoffs
 
-Default side effects are local only. Do not close issues, update labels, push branches, create remote branches, or open PRs.
+Everything you paste into a dispatch prompt — and everything a subagent prints
+back — stays resident in your context for the rest of the session and is re-read
+on every later turn. Hand artifacts over as files:
 
-Only comment on an issue when needed to preserve important context:
+- **Issue brief:** generated before dispatching an implementer. It is the single
+  source of requirements for the issue.
+- **Report file:** named after the brief and stored under
+  `$(git rev-parse --git-path ipi)`. The implementer writes the full report
+  there and returns only status, commits, a one-line test summary, concerns, and
+  the report path.
+- **Reviewer inputs:** issue reviewers get the issue brief, report file, review
+  package, and binding PRD/global constraints.
+- **Fix dispatches:** append fix reports and test results to the same report
+  file. Re-reviews read the updated file.
 
-- `BLOCKED` or unresolved `NEEDS_CONTEXT`
-- review conflicts with issue or PRD requirements
-- `Cannot verify from diff` requires human confirmation
-- implementation intentionally deviates from the issue or PRD
-- final review leaves important unresolved risk
+Do not paste accumulated prior-issue summaries into later dispatches. A fresh
+subagent needs its issue, the interfaces it touches, and binding constraints.
+Nothing else.
 
-For custom trackers, follow `docs/agents/issue-tracker.md` for comments only when one of those cases applies.
+## Durable Progress
+
+Conversation memory does not survive compaction. Track progress in the ledger,
+not only in todos.
+
+- At skill start, check `$(git rev-parse --git-path ipi)/progress.md`.
+- Issues listed there as complete are DONE — do not re-dispatch them.
+- When an issue's review comes back clean and its branch is squash-merged, append
+  one line to the ledger: `Issue <ref>: complete (commits <base7>..<head7>,
+  squash <sha7>, review clean, branch deleted)`.
+- The ledger is your recovery map: the commits it names exist in git even when
+  your context no longer remembers creating them.
+- Record every transient IPI file the run creates. On successful completion,
+  delete only the transient files recorded in the ledger. Do not `rm -rf` the
+  whole IPI directory. Keep files for BLOCKED or interrupted runs.
+
+## Prompt Templates and Scripts
+
+- [implementer-prompt.md](implementer-prompt.md) - issue implementer and fixer
+  dispatch template
+- [issue-reviewer-prompt.md](issue-reviewer-prompt.md) - issue-scoped review
+  template
+- `scripts/issue-brief --tracker github|gitlab|local ISSUE_REF [OUTFILE]` -
+  writes one issue brief
+- `scripts/review-package BASE HEAD [OUTFILE]` - writes commit list, stat, and
+  diff package
 
 ## Completion
 
-Finish with a concise report:
-
-- base branch and PRD/batch branch
-- issues merged and squash commits
-- final review verdict, if run
-- tests and checks reported by implementers/fixers
-- Minor findings and unresolved risks
-- note that no push or PR was created
+Finish with a concise status: PRD/batch branch, merged issue squash commits,
+deleted local branches, final review verdict if any, verification summary,
+unresolved risks, and whether any push/PR/tracker side effects were requested.
 
 ## Red Flags
 
 Never:
 
-- implement directly in the controller session
-- run without subagents
-- start from a dirty working tree
-- switch branches with dirty changes
-- dispatch implementation subagents in parallel
-- review uncommitted work
-- skip issue review
-- squash merge an issue branch with unresolved Critical or Important findings
-- skip final review when PRD mode or multi-issue mode requires it
-- push, open PRs, close issues, or delete branches
-- continue to the next issue after an unresolved blocker
+- Start implementation on main/master branch without explicit user consent
+- Skip issue review, or accept a report missing either verdict (spec compliance
+  AND issue quality are both required)
+- Proceed with unfixed Critical or Important issues
+- Dispatch multiple implementation subagents in parallel (conflicts)
+- Make a subagent read the full PRD when an issue brief is sufficient
+- Skip scene-setting context
+- Ignore subagent questions
+- Accept "close enough" on spec compliance
+- Skip review loops
+- Tell a reviewer what not to flag, or pre-rate a finding's severity in the
+  dispatch prompt
+- Dispatch a reviewer without a diff file
+- Move to the next issue while the current issue review has open Critical or
+  Important findings
+- Re-dispatch an issue the progress ledger already marks complete
+- Switch branches, merge, or delete branches with a dirty working tree/index
+- Push, open PRs, modify tracker issues, delete remote branches, or force-push
+  unless explicitly requested
