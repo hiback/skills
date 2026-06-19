@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Generate a review package containing commit list, stat summary, and net diff.
-# The package is passed to reviewer subagents as a file path.
+# Generate a review package: commit list, stat summary, and the net diff with
+# extended context, written to a file the reviewer reads in one call. Using the
+# recorded per-issue BASE (not HEAD~1) keeps multi-commit work intact.
 #
 # Usage: review-package BASE HEAD [OUTFILE]
 set -euo pipefail
@@ -26,7 +27,7 @@ git rev-parse --verify --quiet "$head" >/dev/null || {
 if [ "$#" -eq 3 ]; then
   out=$3
 else
-  dir=$(git rev-parse --git-path implement-prd-issues)
+  dir=$(git rev-parse --git-path ipi)
   mkdir -p "$dir"
   dir=$(cd "$dir" && pwd)
   out="$dir/review-$(git rev-parse --short "$base")..$(git rev-parse --short "$head").diff"

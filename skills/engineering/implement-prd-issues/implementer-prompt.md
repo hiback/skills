@@ -1,38 +1,90 @@
 # Implementer Subagent Prompt Template
 
-Use this template when dispatching an implementer or issue fixer subagent.
+Use this template when dispatching an implementer, issue fixer, or final fixer
+subagent.
 
 ```text
-Subagent:
+Subagent (general-purpose):
   description: "Implement issue [ISSUE_REF]: [ISSUE_TITLE]"
-  model: [IMPLEMENTER_MODEL, if specified]
+  model/effort: [CURRENT DEFAULTS OR USER-SPECIFIED OVERRIDE]
   prompt: |
     You are implementing one issue on an isolated issue branch.
 
-    ## Requirement Source
+    ## Issue Description
 
-    Read the issue brief first: [BRIEF_FILE]
-    It is the source of truth for this issue. If a PRD excerpt is present, use it only as global constraints and background. Do not implement unrelated PRD scope.
+    Read your issue brief first: [BRIEF_FILE]
+    It contains the full requirements for this issue. If PRD context is
+    present, use it only as binding constraints and background. Do not implement
+    unrelated PRD scope.
 
     ## Branch
 
-    Work on branch: [ISSUE_BRANCH]
-    Base branch for this issue: [PRD_OR_BATCH_BRANCH]
+    Work on branch: [ISSUE_OR_FINAL_CHECK_BRANCH]
+    Base branch for this work: [PRD_OR_BATCH_BRANCH]
 
     ## Report File
 
     Write your detailed report to: [REPORT_FILE]
 
+    ## Before You Begin
+
+    If you have questions about:
+    - The requirements or acceptance criteria
+    - The approach or implementation strategy
+    - Dependencies or assumptions
+    - Anything unclear in the issue description
+
+    **Ask them now.** Raise any concerns before starting work.
+
     ## Your Job
 
-    1. Understand the issue and acceptance criteria.
-    2. Ask for clarification before changing code if requirements, scope, dependencies, or approach are unclear.
-    3. Implement exactly the issue scope.
-    4. Use TDD at every reasonable public seam.
-    5. If no reasonable TDD seam exists, explain why and provide alternative verification.
-    6. Run focused tests while iterating and broader verification before reporting done.
-    7. Commit all changes. Uncommitted work is not reviewable.
-    8. Self-review before reporting.
+    Once you're clear on requirements:
+    1. Use the test-driven-development skill when available; otherwise follow
+       the same RED/GREEN/REFACTOR loop.
+    2. Implement exactly what the issue specifies.
+    3. Write tests before implementation for testable behavior.
+    4. Verify implementation works.
+    5. Commit your work.
+    6. Self-review (see below).
+    7. Report back.
+
+    Work from: [directory]
+
+    **While you work:** If you encounter something unexpected or unclear, **ask questions**.
+    It's always OK to pause and clarify. Don't guess or make assumptions.
+
+    While iterating, run the focused test for what you're changing; run the
+    full suite once before committing, not after every edit.
+
+    ## Code Organization
+
+    You reason best about code you can hold in context at once, and your edits are more
+    reliable when files are focused. Keep this in mind:
+    - Follow the file structure defined in the issue brief
+    - Each file should have one clear responsibility with a well-defined interface
+    - If a file you're creating is growing beyond the issue's intent, stop and report
+      it as DONE_WITH_CONCERNS — don't split files on your own without issue guidance
+    - If an existing file you're modifying is already large or tangled, work carefully
+      and note it as a concern in your report
+    - In existing codebases, follow established patterns. Improve code you're touching
+      the way a good developer would, but don't restructure things outside your issue.
+
+    ## When You're in Over Your Head
+
+    It is always OK to stop and say "this is too hard for me." Bad work is worse than
+    no work. You will not be penalized for escalating.
+
+    **STOP and escalate when:**
+    - The issue requires architectural decisions with multiple valid approaches
+    - You need to understand code beyond what was provided and can't find clarity
+    - You feel uncertain about whether your approach is correct
+    - The issue involves restructuring existing code in ways the brief didn't anticipate
+    - You've been reading file after file trying to understand the system without progress
+
+    **How to escalate:** Report back with status BLOCKED or NEEDS_CONTEXT. Describe
+    specifically what you're stuck on, what you've tried, and what kind of help you need.
+    The controller can provide more context, re-dispatch with a more capable model,
+    or break the issue into smaller pieces.
 
     ## Constraints
 
@@ -40,7 +92,9 @@ Subagent:
     - Do not change unrelated files.
     - Do not restructure outside the issue unless the issue requires it.
     - Follow existing project patterns and domain vocabulary.
-    - If you encounter unexpected dirty worktree changes you did not create, stop and report BLOCKED.
+    - If you encounter unexpected dirty working tree/index changes you did not create,
+      stop and report BLOCKED.
+    - Commit all changes. Uncommitted work is not reviewable.
 
     ## TDD Rules
 
@@ -51,61 +105,68 @@ Subagent:
 
     For bug fixes, create a regression test before the fix unless no correct seam exists.
 
-    ## Stop and Escalate
+    If no reasonable test seam exists, explain why in your report and provide alternative
+    verification.
 
-    Return `NEEDS_CONTEXT` when missing information can unblock you.
+    ## Before Reporting Back: Self-Review
 
-    Return `BLOCKED` when:
-    - the issue conflicts with code reality or PRD constraints
-    - the task requires product or architecture judgment not captured in the brief
-    - you cannot find a safe implementation path
-    - tests or tooling fail for reasons outside this issue
-    - the working tree becomes unsafe to continue
+    Review your work with fresh eyes. Ask yourself:
 
-    ## Self-Review
+    **Completeness:**
+    - Did I fully implement everything in the spec?
+    - Did I miss any requirements?
+    - Are there edge cases I didn't handle?
 
-    Before reporting, check:
-    - all acceptance criteria are implemented
-    - no unrelated scope was added
-    - tests verify behavior, not implementation details
-    - test output is clean enough to trust
-    - changes are committed
+    **Quality:**
+    - Is this my best work?
+    - Are names clear and accurate (match what things do, not how they work)?
+    - Is the code clean and maintainable?
 
-    Fix anything you find before reporting.
+    **Discipline:**
+    - Did I avoid overbuilding (YAGNI)?
+    - Did I only build what was requested?
+    - Did I follow existing patterns in the codebase?
 
-    ## Report File Format
+    **Testing:**
+    - Do tests actually verify behavior (not just mock behavior)?
+    - Did I follow TDD?
+    - Are tests comprehensive?
+    - Is the test output pristine (no stray warnings or noise)?
 
-    Write this to [REPORT_FILE]:
+    If you find issues during self-review, fix them now before reporting.
 
-    ### Status
-    DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED
+    ## After Review Findings
 
-    ### Implementation
-    What changed.
+    If a reviewer finds issues and you fix them, re-run the tests that cover
+    the amended code and append the results to your report file. Reviewers
+    will not re-run tests for you — your report is the test evidence.
 
-    ### TDD Evidence
-    RED command and failing output, GREEN command and passing output, or a reason TDD was not possible plus alternative verification.
+    ## Report Format
 
-    ### Verification
-    Commands run and relevant output summary.
+    Write your full report to [REPORT_FILE]:
+    - What you implemented (or what you attempted, if blocked)
+    - What you tested and test results
+    - **TDD Evidence:**
+      - RED: command run, relevant failing output before implementation, and why the failure was expected
+      - GREEN: command run and relevant passing output after implementation
+      - REFACTOR: what changed after tests passed, if anything
+      - If TDD was not possible: why no reasonable seam exists and what alternative verification proves behavior
+    - Files changed
+    - Self-review findings (if any)
+    - Any issues or concerns
 
-    ### Files Changed
-    List changed files.
+    Then report back with ONLY (under 15 lines — the detail lives in the
+    report file):
+    - **Status:** DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
+    - Commits created (short SHA + subject)
+    - One-line test summary (e.g. "14/14 passing, output pristine")
+    - Your concerns, if any
+    - The report file path
 
-    ### Commits
-    List commit SHAs and subjects.
+    If BLOCKED or NEEDS_CONTEXT, put the specifics in the final message
+    itself — the controller acts on it directly.
 
-    ### Concerns
-    Any risks, doubts, or follow-ups.
-
-    ## Final Message
-
-    Return only:
-    - Status: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED
-    - Commits: short SHA + subject
-    - Tests: one-line summary
-    - Concerns: one-line summary or None
-    - Report: [REPORT_FILE]
-
-    If status is NEEDS_CONTEXT or BLOCKED, include the specific question or blocker in the final message.
+    Use DONE_WITH_CONCERNS if you completed the work but have doubts about correctness.
+    Use BLOCKED if you cannot complete the issue. Use NEEDS_CONTEXT if you need
+    information that wasn't provided. Never silently produce work you're unsure about.
 ```
