@@ -154,8 +154,7 @@ Squash commit subject:
 - remote trackers: `<type>: <issue title> (<issue-ref>)`
 - local markdown: `<type>: <issue title>`
 
-Commit body includes the source issue/path, reviewed issue branch, and test
-summary.
+Use a subject-only squash commit.
 
 ## Integrated Review
 

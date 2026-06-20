@@ -94,7 +94,7 @@ Subagent (general-purpose):
     - Follow existing project patterns and domain vocabulary.
     - If you encounter unexpected dirty working tree/index changes you did not create,
       stop and report BLOCKED.
-    - Commit all changes. Uncommitted work is not reviewable.
+    - Commit all changes with a one-line subject only.
 
     ## TDD Rules
 
