@@ -10,7 +10,15 @@
 
 # Skills For Real Engineers
 
-[![skills.sh](https://skills.sh/b/mattpocock/skills)](https://skills.sh/mattpocock/skills)
+[Install this fork with skills.sh](https://skills.sh/)
+
+This fork tracks [mattpocock/skills](https://github.com/mattpocock/skills) and
+adds locally maintained skills without changing the upstream default flows.
+
+## Fork additions
+
+- **[implement-spec-tickets](./skills/engineering/implement-spec-tickets/SKILL.md)** — Optional promoted batch executor for an approved spec and ticket frontier; exported by this fork's plugin.
+- **[pdf-quiz-extractor](./skills/private/pdf-quiz-extractor/SKILL.md)** — Fork-owner private workflow for converting AWS certification PDFs into bilingual JSON; intentionally excluded from the plugin.
 
 My agent skills that I use every day to do real engineering - not vibe coding.
 
@@ -24,7 +32,9 @@ If you want to keep up with changes to these skills, and any new ones I create, 
 
 ## Installation (30-second setup)
 
-Two ways in, two philosophies. **The [Claude Code plugin](https://code.claude.com/docs/en/plugins)** installs the whole set as a managed, read-only bundle that updates when I ship — you subscribe rather than fork. **[skills.sh](https://skills.sh/mattpocock/skills)** copies editable skill files into your project, so you can hack on them and make them your own. Pick one — installing both leaves you with every skill twice.
+Claude Code's official `mattpocock-skills` listing points at `mattpocock/skills`, not this fork. An unqualified install therefore omits this fork's promoted additions. Install the fork through its repository marketplace, or use skills.sh with `hiback/skills`.
+
+Two ways in, two philosophies. **The [Claude Code plugin](https://code.claude.com/docs/en/plugins)** installs this fork's promoted set as a managed, read-only bundle. **[skills.sh](https://skills.sh/)** copies editable skill files into your project, so you can hack on them and make them your own. Pick one — installing both leaves you with every skill twice.
 
 ### 1. Get the skills
 
@@ -32,16 +42,18 @@ Two ways in, two philosophies. **The [Claude Code plugin](https://code.claude.co
 <summary><strong>Claude Code</strong></summary>
 
 ```bash
-claude plugins install mattpocock-skills
+claude plugin marketplace add hiback/skills
+claude plugin install mattpocock-skills@mattpocock
 ```
 
 Or, from inside a session:
 
 ```
-/plugin install mattpocock-skills
+/plugin marketplace add hiback/skills
+/plugin install mattpocock-skills@mattpocock
 ```
 
-It's in Claude Code's official marketplace, so there's nothing to add first, and updates arrive automatically.
+The `@mattpocock` suffix is the marketplace name declared by this repository. Keep the qualified form so Claude Code selects the fork instead of the official upstream listing.
 
 </details>
 
@@ -49,7 +61,7 @@ It's in Claude Code's official marketplace, so there's nothing to add first, and
 <summary><strong>Codex, and other agents</strong></summary>
 
 ```bash
-npx skills@latest add mattpocock/skills
+npx skills@latest add hiback/skills
 ```
 
 Pick the skills you want, and which coding agents to install them on. **The installer lets you choose which skills to take — make sure `setup-matt-pocock-skills` is one of them.**
@@ -64,10 +76,10 @@ A native Codex plugin is on the roadmap — see [`.agents/adr/0002-ship-as-a-cla
 Use the same installer, on any agent — including Claude Code:
 
 ```bash
-npx skills@latest add mattpocock/skills
+npx skills@latest add hiback/skills
 ```
 
-It writes the skills into your repo as ordinary files you own and can edit. Nothing updates behind your back; pull my latest changes when you want them with `npx skills update`.
+It writes the skills into your repo as ordinary files you own and can edit. Nothing updates behind your back; pull this fork's latest changes when you want them with `npx skills update`.
 
 </details>
 
@@ -199,6 +211,7 @@ Skills I use daily for code work.
 - **[to-spec](./skills/engineering/to-spec/SKILL.md)** — Turn the current conversation into a spec and publish it to the issue tracker. No interview — just synthesizes what you've already discussed.
 - **[to-tickets](./skills/engineering/to-tickets/SKILL.md)** — Break any plan, spec, or conversation into a set of tracer-bullet tickets, each declaring its blocking edges — written as text in a local file, or as native blocking links on a real tracker.
 - **[implement](./skills/engineering/implement/SKILL.md)** — Build the work described by a spec or set of tickets, driving `/tdd` at pre-agreed seams and closing out with `/code-review` before committing.
+- **[implement-spec-tickets](./skills/engineering/implement-spec-tickets/SKILL.md)** — Optionally execute an approved spec or ticket set as one recoverable batch through isolated ticket branches, review gates, squash merges, and integrated review.
 - **[wayfinder](./skills/engineering/wayfinder/SKILL.md)** — Plan a huge chunk of work, more than one agent session can hold, as a shared map of decision tickets on the issue tracker — resolve them one at a time until the way to the destination is clear.
 
 **Model-invoked**

@@ -1,0 +1,5 @@
+interface:
+  display_name: "PDF Quiz Extractor"
+  short_description: "Convert AWS quiz PDFs into bilingual JSON"
+policy:
+  allow_implicit_invocation: false

@@ -31,6 +31,10 @@ Keep steps 1–3 in **one unbroken context window** — don't compact or clear u
 
 The limit on this is the **[smart zone](https://www.aihero.dev/ai-coding-dictionary/smart-zone)**: the window (~150k tokens on state-of-the-art models) within which the model still reasons sharply. If a session approaches it before `/to-tickets`, don't push on degraded — `/compact` at the nearest phase boundary and carry on (see Phase boundaries).
 
+## Optional batch execution
+
+- **`/implement-spec-tickets`** — when `/to-tickets` has already produced an approved ticket set and you want one controller to execute the full frontier through isolated ticket branches, review gates, squash merges, recovery state, and integrated review. The default flow remains one fresh `/implement` session per ticket.
+
 ## On-ramps
 
 A starting situation that generates work, then merges onto the main flow.
