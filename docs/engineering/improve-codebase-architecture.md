@@ -35,7 +35,7 @@ It writes in two places. The report goes to `<tmpdir>/architecture-review-<times
 
 The skill turns on one idea: **depth**. A deep module puts a lot of behaviour behind a small, stable interface. A shallow one leaks its implementation through an interface nearly as wide as the code beneath it. The report is a hunt for shallowness — pure functions extracted only for testability while the real bugs live in how they are called (no **locality**), modules leaking across their **seams**, a concept you cannot understand without opening five files — and a proposal for the deepening that fixes it.
 
-Each candidate is a card: the files involved, the friction, a plain-English solution, the benefit stated in terms of **locality** and **leverage**, a before/after diagram, and a strength badge.
+Each candidate is a card: the files involved, the friction, a plain-language solution, the benefit stated in terms of **locality** and **leverage**, a before/after diagram, and a strength badge.
 
 | Badge | What it means for you |
 | --- | --- |

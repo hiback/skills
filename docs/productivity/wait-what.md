@@ -1,6 +1,6 @@
 ## What it does
 
-`wait-what` is what you type when a message didn't land. The [agent](https://www.aihero.dev/ai-coding-dictionary/agent) then re-pitches what it just said. It adds the context you were missing, writes in plain English, and uses the vocabulary from your project's `CONTEXT.md`.
+`wait-what` is what you type when a message didn't land. The [agent](https://www.aihero.dev/ai-coding-dictionary/agent) then re-pitches what it just said. It adds the context you were missing, writes in plain language, and uses the vocabulary from your project's `CONTEXT.md`.
 
 The skill is three lines long. That is the design, not an unfinished draft. Skills that fight verbosity fail by growing: a four-hundred-line concision skill still leaves the [model](https://www.aihero.dev/ai-coding-dictionary/model) verbose, because the model reads the volume, not the plea. This one carries a single precise leading word and nothing else.
 
@@ -20,7 +20,7 @@ The skill says re-pitch **that**, not "that last message". What lost you is usua
 
 ## It plugs into the language you already have
 
-The body reuses the leading words already in your global `CLAUDE.md` and your project's `CONTEXT.md`. ASD-STE100 Simplified Technical English sets the register. The ubiquitous language supplies the nouns. The skill, `CLAUDE.md` and `CONTEXT.md` reach for the same [tokens](https://www.aihero.dev/ai-coding-dictionary/token), so invoking it is not a new instruction. It is a reminder of one the agent already agreed to.
+The body asks for plain language and reuses the ubiquitous language from your project's `CONTEXT.md`. Plain language sets the register. The ubiquitous language supplies the nouns. The skill and `CONTEXT.md` reach for the same [tokens](https://www.aihero.dev/ai-coding-dictionary/token), so invoking it reinforces vocabulary the agent already has instead of inventing a new one.
 
 If you have no `CONTEXT.md`, the skill still works. You lose only the domain-vocabulary half.
 
