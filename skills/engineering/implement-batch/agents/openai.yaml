@@ -1,0 +1,5 @@
+interface:
+  display_name: "Implement Batch"
+  short_description: "Run a spec or ticket set as a reviewed serial batch"
+policy:
+  allow_implicit_invocation: false

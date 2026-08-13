@@ -26,7 +26,7 @@ git rev-parse --verify --quiet "$head" >/dev/null || {
 if [ "$#" -eq 3 ]; then
   out=$3
 else
-  dir=$(git rev-parse --git-path implement-spec-tickets)
+  dir=$(git rev-parse --git-path implement-batch)
   mkdir -p "$dir"
   dir=$(cd "$dir" && pwd)
   out="$dir/review-$(git rev-parse --short "$base")..$(git rev-parse --short "$head").diff"

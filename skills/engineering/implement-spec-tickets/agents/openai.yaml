@@ -1,5 +1,0 @@
-interface:
-  display_name: "Implement Spec Tickets"
-  short_description: "Execute a spec through reviewed ticket branches"
-policy:
-  allow_implicit_invocation: false

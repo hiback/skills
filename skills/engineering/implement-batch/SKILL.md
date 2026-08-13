@@ -1,17 +1,18 @@
 ---
-name: implement-spec-tickets
-description: Execute an approved spec or explicit ticket set through fresh implementers, isolated ticket branches, review gates, local squash merges, recovery state, and integrated review.
+name: implement-batch
+description: Execute an approved spec or explicit ticket set as one recoverable serial batch through fresh implementers, isolated ticket branches, review gates, local squash merges, and integrated review.
 disable-model-invocation: true
 ---
 
-# Implement Spec Tickets
+# Implement Batch
 
-Execute an approved spec or explicit ticket set by dispatching a fresh
-implementer per ticket, reviewing each ticket before integration, and running a
-broad integrated review when required.
+Execute an approved spec's child tickets or an explicit ticket set as one
+recoverable serial batch by dispatching a fresh implementer per ticket,
+reviewing each ticket before integration, and running a broad integrated review
+when required.
 
-**Core principle:** Fresh implementer per ticket + ticket review gate + local
-squash merge + integrated review when needed.
+**Core principle:** Serial frontier + fresh implementer per ticket + ticket
+review gate + local squash merge + integrated review when needed.
 
 **Narration:** Between tool calls, narrate at most one short line. The ledger and
 tool results carry the durable record.
@@ -119,8 +120,7 @@ implementation agents in parallel and never use worktrees.
    branch, merge, or delete operation. Do not stash, discard, or auto-commit
    user changes.
 2. Read
-   `$(git rev-parse --git-path implement-spec-tickets)/progress.md` when it
-   exists.
+   `$(git rev-parse --git-path implement-batch)/progress.md` when it exists.
 3. Resume a matching ACTIVE or BLOCKED run after verifying every recorded
    branch, base SHA, HEAD, squash commit, and completed ticket. Never
    re-dispatch a completed ticket.
@@ -234,7 +234,7 @@ integration risk.
 Avoid pasting growing artifacts through the conversation. Store them under:
 
 ```text
-$(git rev-parse --git-path implement-spec-tickets)
+$(git rev-parse --git-path implement-batch)
 ```
 
 - **Ticket brief:** the ticket's requirements source for implementers/reviewers.

@@ -17,7 +17,7 @@ adds locally maintained skills without changing the upstream default flows.
 
 ## Fork additions
 
-- **[implement-spec-tickets](./skills/engineering/implement-spec-tickets/SKILL.md)** — Optional promoted batch executor for an approved spec and ticket frontier; exported by this fork's plugin.
+- **[implement-batch](./skills/engineering/implement-batch/SKILL.md)** — Optional promoted serial batch executor for an approved spec or explicit ticket set; exported by this fork's plugin.
 - **[pdf-quiz-extractor](./skills/private/pdf-quiz-extractor/SKILL.md)** — Fork-owner private workflow for converting AWS certification PDFs into bilingual JSON; intentionally excluded from the plugin.
 
 My agent skills that I use every day to do real engineering - not vibe coding.
@@ -211,7 +211,7 @@ Skills I use daily for code work.
 - **[to-spec](./skills/engineering/to-spec/SKILL.md)** — Turn the current conversation into a spec and publish it to the issue tracker. No interview — just synthesizes what you've already discussed.
 - **[to-tickets](./skills/engineering/to-tickets/SKILL.md)** — Break any plan, spec, or conversation into a set of tracer-bullet tickets, each declaring its blocking edges — written as text in a local file, or as native blocking links on a real tracker.
 - **[implement](./skills/engineering/implement/SKILL.md)** — Build the work described by a spec or set of tickets, driving `/tdd` at pre-agreed seams and closing out with `/code-review` before committing.
-- **[implement-spec-tickets](./skills/engineering/implement-spec-tickets/SKILL.md)** — Optionally execute an approved spec or ticket set as one recoverable batch through isolated ticket branches, review gates, squash merges, and integrated review.
+- **[implement-batch](./skills/engineering/implement-batch/SKILL.md)** — Optionally execute an approved spec or explicit ticket set as one recoverable serial batch through isolated ticket branches, review gates, squash merges, and integrated review.
 - **[wayfinder](./skills/engineering/wayfinder/SKILL.md)** — Plan a huge chunk of work, more than one agent session can hold, as a shared map of decision tickets on the issue tracker — resolve them one at a time until the way to the destination is clear.
 
 **Model-invoked**

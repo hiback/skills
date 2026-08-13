@@ -1,16 +1,17 @@
 ## What it does
 
-`implement-spec-tickets` executes an approved [spec](https://www.aihero.dev/ai-coding-dictionary/spec) or explicit set of [tickets](https://www.aihero.dev/ai-coding-dictionary/ticket) as one recoverable batch. It gives each ticket a fresh implementer, an isolated branch, a review gate, and one squash commit before checking the integrated result against the source requirements.
+`implement-batch` executes either the child [tickets](https://www.aihero.dev/ai-coding-dictionary/ticket) of an approved [spec](https://www.aihero.dev/ai-coding-dictionary/spec) or an explicit ticket set as one recoverable serial batch. It gives each ticket a fresh implementer, an isolated branch, a review gate, and one squash commit before checking the integrated result against the source requirements.
 
 One controller owns the complete batch state and advances the ticket frontier serially. It never runs implementation workers in parallel and never uses worktrees.
 
 ## When to reach for it
 
-You invoke this by typing `/implement-spec-tickets` — the agent won't reach for it on its own.
+You invoke this by typing `/implement-batch` — the agent won't reach for it on its own.
 
 | Where you are | What to run |
 | --- | --- |
-| An approved multi-ticket spec should run under one controller with recovery and integrated review | `/implement-spec-tickets` |
+| An approved spec's discoverable child tickets should run under one controller with recovery and integrated review | `/implement-batch <spec-ref>` |
+| An explicit ticket set needs the same recovery and review gates | `/implement-batch <ticket-ref>...` |
 | One ticket or a small change should stay in the current context | [implement](https://aihero.dev/skills-implement) |
 | The work has not been split into approved tickets yet | [to-tickets](https://aihero.dev/skills-to-tickets) first |
 | Independent tickets should run concurrently in separate worktrees | Open separate `implement` sessions; this skill is deliberately serial |

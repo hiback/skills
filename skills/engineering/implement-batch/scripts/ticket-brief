@@ -28,7 +28,7 @@ sanitize_ref() {
 if [ "$#" -eq 4 ]; then
   out=$4
 else
-  dir=$(git rev-parse --git-path implement-spec-tickets)
+  dir=$(git rev-parse --git-path implement-batch)
   mkdir -p "$dir"
   dir=$(cd "$dir" && pwd)
   id=$(sanitize_ref "$ref")

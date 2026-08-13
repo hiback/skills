@@ -20,13 +20,13 @@ You invoke this by typing `/ask-matt` — the agent won't reach for it on its ow
 
 The router names skills; it does not install them. Everything it points at has to be installed for the recommendation to be actionable, and it only knows the promoted skills in this repo.
 
-The tracker-dependent routes — triage, `to-spec`, `to-tickets`, `implement`, `implement-spec-tickets` — assume [setup-matt-pocock-skills](https://aihero.dev/skills-setup-matt-pocock-skills) has already configured an issue tracker in the repo. The router will happily recommend them before that has happened.
+The tracker-dependent routes — triage, `to-spec`, `to-tickets`, `implement`, `implement-batch` — assume [setup-matt-pocock-skills](https://aihero.dev/skills-setup-matt-pocock-skills) has already configured an issue tracker in the repo. The router will happily recommend them before that has happened.
 
 ## Flows, not skills
 
 The word the skill gives you to think with is **flow**: a path *through* the skills, not a single one. Naming your situation places you on a flow at a step, which is a different answer from "here is the skill that matches your keywords". Four kinds of route exist, and the skill itself carries them in full:
 
-- **The main flow**, idea to ship. Grill, spec, tickets, implement, review, with two branches inside it: a prototype detour when a question needs runnable code to settle, and the spec-and-tickets split when the build spans more than one session. After tickets, this fork adds an optional [implement-spec-tickets](https://github.com/hiback/skills/blob/main/docs/engineering/implement-spec-tickets.md) execution path when one serial controller should own the approved frontier.
+- **The main flow**, idea to ship. Grill, spec, tickets, implement, review, with two branches inside it: a prototype detour when a question needs runnable code to settle, and the spec-and-tickets split when the build spans more than one session. After tickets, this fork adds an optional [implement-batch](https://github.com/hiback/skills/blob/main/docs/engineering/implement-batch.md) execution path when an approved spec or explicit ticket set should run under one serial controller.
 - **On-ramps**, for a situation that generates work and then merges onto the main flow: incoming bug reports, something broken, or an effort too foggy and too large to hold in one session.
 - **Standalones**, off every flow, reached for on their own terms — the prototype, the questionnaire, the merge conflict you are already sitting in.
 - **A vocabulary layer underneath**, the two references the other skills pull in when the words rather than the process are the problem.
@@ -53,7 +53,7 @@ People keep asking for one in the README. This skill is that list — it is what
 
 **Can it route one approved ticket set through a single batch controller?**
 
-In this fork, yes: it points to [implement-spec-tickets](https://github.com/hiback/skills/blob/main/docs/engineering/implement-spec-tickets.md). The default remains one fresh [implement](https://aihero.dev/skills-implement) session per ticket; choose the batch path only when serial orchestration, recovery state, per-ticket review gates, and integrated review are worth the extra controller.
+In this fork, yes: it points to [implement-batch](https://github.com/hiback/skills/blob/main/docs/engineering/implement-batch.md). The default remains one fresh [implement](https://aihero.dev/skills-implement) session per ticket; choose the batch path for an approved spec or explicit ticket set only when serial orchestration, recovery state, per-ticket review gates, and integrated review are worth the extra controller.
 
 **It told me half the skills aren't installed.**
 

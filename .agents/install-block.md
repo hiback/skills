@@ -60,4 +60,4 @@ The plugin is a managed, read-only bundle. skills.sh writes files you own and ed
 
 ## The upstream install is not the fork install
 
-`claude plugins install mattpocock-skills` resolves through Claude Code's official marketplace to `mattpocock/skills`. It is the correct command for the upstream set, but it does not install `implement-spec-tickets` or any future promoted fork addition, so fork-facing documentation must not use it.
+`claude plugins install mattpocock-skills` resolves through Claude Code's official marketplace to `mattpocock/skills`. It is the correct command for the upstream set, but it does not install `implement-batch` or any future promoted fork addition, so fork-facing documentation must not use it.
