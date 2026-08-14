@@ -33,7 +33,7 @@ The limit on this is the **[smart zone](https://www.aihero.dev/ai-coding-diction
 
 ## Optional batch execution
 
-- **`/implement-batch`** — when you have an approved spec or explicit ticket set and want one serial controller to execute the full frontier through isolated ticket branches, review gates, squash merges, recovery state, and integrated review. The default flow remains one fresh `/implement` session per ticket.
+- **`/implement-batch`** — when the tickets are settled and you would rather review the result than each step. One serial controller runs the same build as `/implement` once per ticket, and can resume after an interruption. The default flow remains one fresh `/implement` session per ticket.
 
 ## On-ramps
 

@@ -1,64 +1,68 @@
 ## What it does
 
-`implement-batch` executes either the child [tickets](https://www.aihero.dev/ai-coding-dictionary/ticket) of an approved [spec](https://www.aihero.dev/ai-coding-dictionary/spec) or an explicit ticket set as one recoverable serial batch. It gives each ticket a fresh implementer, an isolated branch, a review gate, and one squash commit before checking the integrated result against the source requirements.
+`implement-batch` works a whole set of [tickets](https://www.aihero.dev/ai-coding-dictionary/ticket) for you instead of one. You point it at an approved [spec](https://www.aihero.dev/ai-coding-dictionary/spec) or an explicit list of tickets, and it builds each one, reviews it, and squash-merges it onto a batch branch before starting the next.
 
-One controller owns the complete batch state and advances the ticket frontier serially. It never runs implementation workers in parallel and never uses worktrees.
+It runs the same build as [implement](https://aihero.dev/skills-implement) — [tdd](https://aihero.dev/skills-tdd) at the seam, then [code-review](https://aihero.dev/skills-code-review) — rather than a second implementation process of its own. What it adds is orchestration: a fresh [subagent](https://www.aihero.dev/ai-coding-dictionary/subagent) per ticket so no ticket inherits the last one's context, a branch per ticket so a bad one can be thrown away, and a ledger it can resume from after an interruption.
 
 ## When to reach for it
 
-You invoke this by typing `/implement-batch` — the agent won't reach for it on its own.
+You invoke this by typing `/implement-batch` — the [agent](https://www.aihero.dev/ai-coding-dictionary/agent) won't reach for it on its own.
 
 | Where you are | What to run |
 | --- | --- |
-| An approved spec's discoverable child tickets should run under one controller with recovery and integrated review | `/implement-batch <spec-ref>` |
-| An explicit ticket set needs the same recovery and review gates | `/implement-batch <ticket-ref>...` |
-| One ticket or a small change should stay in the current context | [implement](https://aihero.dev/skills-implement) |
-| The work has not been split into approved tickets yet | [to-tickets](https://aihero.dev/skills-to-tickets) first |
-| Independent tickets should run concurrently in separate worktrees | Open separate `implement` sessions; this skill is deliberately serial |
+| An approved spec whose child tickets should all be built now | `/implement-batch <spec-ref>` |
+| A specific set of tickets you want worked in one go | `/implement-batch <ticket-ref>...` |
+| One ticket, and you want to watch it happen | [implement](https://aihero.dev/skills-implement) |
+| The work isn't split into tickets yet | [to-tickets](https://aihero.dev/skills-to-tickets) first |
+| Independent tickets you want running concurrently | Separate `implement` [sessions](https://www.aihero.dev/ai-coding-dictionary/session); this skill is deliberately serial |
 
 ## Prerequisites
 
-The repository must use Git and have a clean working tree and index. A remote tracker must already be configured by [setup-matt-pocock-skills](https://aihero.dev/skills-setup-matt-pocock-skills); explicit local inputs may instead use `.scratch/<feature>/spec.md` and numbered ticket files under its sibling `issues/` directory.
+A Git repository with a clean working tree and index. The tickets must live somewhere [setup-matt-pocock-skills](https://aihero.dev/skills-setup-matt-pocock-skills) has configured — a real tracker, or local markdown under `.scratch/<feature>/`.
+
+Its runtime state is a single `progress.md` inside `.git`, so nothing it writes lands in your working tree.
 
 ## One controller, one frontier
 
-The **frontier** is the set of tickets whose blockers are complete. Before touching branches, the controller normalizes the dependency graph and rejects duplicate identities, unknown blockers, cycles, ambiguous references, and conflicting tracker state. It then selects the lowest ready ticket, gives a fresh implementer only that ticket's binding context, reviews the resulting branch, squash-merges it, and recalculates the frontier.
+The **frontier** is the set of tickets whose blockers are all complete. The skill takes the lowest-numbered ticket on the frontier, builds it, merges it, and recomputes.
 
-Serial execution is the safety property, not a missing optimization. Every later ticket starts from the latest reviewed integration state, while the controller keeps one durable account of blockers, branches, commits, findings, and verification.
+You are talking to the **controller**. It never writes code itself: implementing and fixing happen in subagents, and reviewing happens in `code-review`'s two parallel subagents. What stays in the controller's own [context window](https://www.aihero.dev/ai-coding-dictionary/context-window) is small on purpose — a status line per ticket, two review reports, and the ledger. That is what makes a ten-ticket batch survivable in one session.
 
-## Review and recovery
+Serial execution is the safety property, not a missing optimisation. Every ticket starts from the latest reviewed state, so the second ticket builds on a first that has already passed review.
 
-Each ticket must clear a spec-and-quality review gate before it can merge. Critical and Important findings go through a fixer and re-review loop. A multi-ticket batch then receives an integrated review for complete requirement coverage, cross-ticket behaviour, regressions, and scope creep.
+## The one stop it plans to make
 
-Runtime state lives under Git's internal directory. After an interruption, a matching run resumes only after verifying its recorded base, branches, commits, completed tickets, and ledger. A completed run leaves a compact ledger rather than a trail of transient reports.
+Before it touches a branch, it dispatches a subagent to ask one question of each ticket: **which public interface will a test observe this behaviour at?** A ticket with no answer, or with several mutually exclusive candidates, is a ticket whose seam isn't settled — and `tdd` refuses to write a test at an unconfirmed seam.
+
+Those doubts come back to you in a single batched round of questions, along with anything else ambiguous. After you answer, the run is meant to go to the end without pausing. This is the difference between a batch that asks you eleven times and one that asks you once.
 
 ## Common questions
 
-**Does it launch all ready tickets in parallel?**
+**Does it run tickets in parallel?**
 
-No. A parallel swarm has been [proposed separately upstream](https://github.com/mattpocock/skills/issues/787), and users have reported unexpectedly expensive fan-out when orchestration launches many workers without a clear gate ([issue #826](https://github.com/mattpocock/skills/issues/826)). This skill chooses the opposite contract: one implementation worker at a time, no worktrees, with every reviewed squash present before the next ticket starts.
+No, one at a time. A parallel swarm is [proposed separately upstream](https://github.com/mattpocock/skills/issues/787) and remains open there. The trade is deliberate: parallel workers can't each start from a base that has already passed review.
 
-**Can it resume after the controller or terminal stops?**
+**`code-review` doesn't give a verdict. Who decides what blocks a merge?**
 
-Yes, when the durable ledger matches the same input and every recorded Git fact still verifies. It never guesses through a moved branch, mismatched commit, different active batch, or dirty working tree; those conditions stop the run for a decision.
+The controller does. `code-review` deliberately reports Standards and Spec separately and never merges or reranks them, so something downstream has to judge — and the skill carries the rule for that. A finding it can't call goes to you rather than through on a guess.
 
-**Does it replace `implement`?**
+**It finished and left a pile of branches behind.**
 
-No. `implement` remains the default for one ticket in one fresh [context window](https://www.aihero.dev/ai-coding-dictionary/context-window). This skill is extra orchestration for an already-approved set when centralized recovery, per-ticket branches, and integrated review justify it.
+On purpose. After a squash merge, that ticket's red-green history and every fixer step exist only on its ticket branch — deleting it is irreversible and the batch branch keeps none of it. The completion summary lists what the run left behind so you can decide.
 
-**Will it push branches, open pull requests, or update tracker state?**
+**My terminal died halfway through.**
 
-Not unless you explicitly request those side effects. Its normal result is a reviewed local spec or batch branch, squash commits, a verification summary, and a COMPLETE ledger.
+Run it again with the same input. It verifies every recorded branch, base and squash commit against the repository before resuming, and never re-dispatches a ticket the ledger records as merged. If the ledger is complete and you point it at the same input again, it tells you what already landed and asks whether you meant to re-run.
 
 ## It's working if
 
-- Only tickets with completed blockers enter the frontier.
-- At most one implementation worker is active at a time.
-- Every completed ticket appears as one reviewed squash commit on the batch branch.
-- An interrupted run verifies its ledger and Git state instead of repeating completed work.
-- Critical and Important findings are cleared before completion.
-- The final report names the batch branch, ticket commits, verification result, remaining risks, and ledger path.
+- It asks you one round of questions at the start, then stops asking.
+- Only one implementation worker is active at a time.
+- Every finished ticket is exactly one squash commit on the batch branch.
+- You can see `/tdd` in each implementer's trace and `/code-review` in the controller's, rather than a bespoke review appearing inline.
+- An interrupted run comes back reporting what it verified, not repeating work.
+- The final report names the batch branch, each ticket's commit, the risks it carried, and the branches still lying around.
 
 ## Where it fits
 
-This is an optional serial executor after [to-tickets](https://aihero.dev/skills-to-tickets). The default path still opens one fresh [implement](https://aihero.dev/skills-implement) session per ticket; choose this branch when one recoverable controller should own the approved frontier. [ask-matt](https://aihero.dev/skills-ask-matt) maps both paths.
+This is an optional serial executor downstream of [to-tickets](https://aihero.dev/skills-to-tickets), on the same chain as [implement](https://aihero.dev/skills-implement) rather than replacing it. The default path is still one fresh `implement` session per ticket, which keeps you in the loop on every one; reach for the batch when you want the whole frontier worked in one go. [ask-matt](https://aihero.dev/skills-ask-matt) maps both paths.
