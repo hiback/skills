@@ -57,6 +57,8 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 
 ### 4. Spawn both sub-agents in parallel
 
+Immediately before spawning the reviewers, use the first existing settings file: `<repo-root>/.scratch/subagent-models.json` (resolve the Git root, falling back to the current working directory), then `~/.config/mattpocock-skills/subagent-models.json`. The active file must be a non-empty JSON object with only optional `reviewer` and `implementer` keys; each present role must be non-empty and may contain only a non-empty full `provider/model-id` as `model` and a `thinking` value of `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, or `max`. Invalid JSON, unknown or empty fields, or unavailable models stop the dispatch. Apply `reviewer` to both sub-agents; a missing file, role, or field inherits the current session's corresponding value.
+
 **Standards sub-agent prompt** — include:
 
 - The full diff command and commit list.

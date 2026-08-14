@@ -30,6 +30,10 @@ You are talking to the **controller**. It never writes code itself: implementing
 
 Serial execution is the safety property, not a missing optimisation. Every ticket starts from the latest reviewed state, so the second ticket builds on a first that has already passed review.
 
+## Choosing the implementer model
+
+When running in pi, ticket implementers and both kinds of fixer share the optional `implementer` model and thinking settings. The startup seam checker remains agent-selected. A repository setting can replace the global setting; without either, controlled workers inherit the current session values. See [Subagent model settings](https://github.com/hiback/skills/blob/main/docs/subagent-models.md) for the paths, format, and validation rules.
+
 ## The one stop it plans to make
 
 Before it touches a branch, it dispatches a subagent to ask one question of each ticket: **which public interface will a test observe this behaviour at?** A ticket with no answer, or with several mutually exclusive candidates, is a ticket whose seam isn't settled — and `tdd` refuses to write a test at an unconfirmed seam.

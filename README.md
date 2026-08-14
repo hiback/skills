@@ -93,6 +93,12 @@ In your agent, run it once per repo. It will:
 
 ### 3. Bam - you're ready to go.
 
+## Optional subagent model settings
+
+When using pi, you can choose the model and thinking level for `code-review`'s reviewers and `implement-batch`'s implementers and fixers. Repository settings override the global settings; without either, the skills use the current session values.
+
+See [Subagent model settings](./docs/subagent-models.md) for the configuration paths, format, and validation rules.
+
 ## Why These Skills Exist
 
 I built these skills as a way to fix common failure modes I see with Claude Code, Codex, and other coding agents.

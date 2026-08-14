@@ -25,6 +25,8 @@ The issue tracker should have been provided to you — run `/setup-matt-pocock-s
 
 Spec and ticket sources are read-only unless the user asks for a tracker change.
 
+For implementer and fixer dispatches only, immediately use the first existing settings file: `<repo-root>/.scratch/subagent-models.json` (resolve the Git root, falling back to the current working directory), then `~/.config/mattpocock-skills/subagent-models.json`. The active file must be a non-empty JSON object with only optional `reviewer` and `implementer` keys; each present role must be non-empty and may contain only a non-empty full `provider/model-id` as `model` and a `thinking` value of `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, or `max`. Invalid JSON, unknown or empty fields, or unavailable models stop the dispatch. Apply `implementer`; a missing file, role, or field inherits the current session's corresponding value. The startup seam-check subagent remains agent-selected.
+
 ## Startup
 
 1. Require a Git repository with a clean working tree and index.

@@ -32,6 +32,10 @@ The Spec axis needs a spec to exist and be findable. It looks in this order:
 
 Step 1 depends on `docs/agents/issue-tracker.md`, which [setup-matt-pocock-skills](https://aihero.dev/skills-setup-matt-pocock-skills) writes. Without it the axis still works if you hand it a path. With no spec at all, the Spec sub-agent is skipped and the report says "no spec available" rather than inventing requirements.
 
+## Choosing the reviewer model
+
+When running in pi, both axes share the optional `reviewer` model and thinking settings. A repository setting can replace the global setting; without either, both reviewers inherit the current session values. See [Subagent model settings](https://github.com/hiback/skills/blob/main/docs/subagent-models.md) for the paths, format, and validation rules.
+
 ## The two axes
 
 | | Standards | Spec |
